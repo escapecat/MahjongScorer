@@ -52,6 +52,30 @@ cd MahjongScorer
 dotnet run
 ```
 
+## 项目结构
+
+```
+MahjongScorer/
+├── Pages/
+│   └── Home.razor              # 主界面（计算器 UI）
+├── Utilities/
+│   ├── FanEvaluator.cs         # 番种计算核心引擎
+│   ├── FanEvaluationResult.cs  # 计算结果模型
+│   ├── HandDecomposer.cs       # 手牌分解（面子+将）
+│   ├── HandPatternDetector.cs  # 特殊牌型检测
+│   ├── MahjongHandEvaluator.cs # 和牌判定
+│   ├── WaitAnalyzer.cs         # 听牌分析（边张/坎张/单钓）
+│   ├── TileConstants.cs        # 牌编码常量
+│   └── TileIconHelper.cs       # 牌图标映射
+├── Services/
+│   ├── FanService.cs           # 番种数据（名称/描述/示例）
+│   └── CalculatorStateService.cs # UI 状态持久化
+├── wwwroot/
+│   ├── tiles/                  # 麻将牌图片
+│   └── css/app.css             # 样式
+└── MahjongScorer.Tests/        # 单元测试
+```
+
 ## 许可证
 
 MIT
