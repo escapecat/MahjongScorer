@@ -40,56 +40,16 @@
 
 ## 技术栈
 
-- **Blazor WebAssembly** (.NET 10) — 纯客户端 SPA
+- **Blazor WebAssembly** (.NET 10)
 - **PWA** — Service Worker 离线缓存
-- **GitHub Pages** — 静态托管，push 自动部署
-- **Google Analytics** — 访问统计
-
-### 性能优化
-
-- `InvariantGlobalization` — 去掉 ICU 国际化数据，减少 ~10 MB
-- 移除 Bootstrap — 全部使用自定义 CSS，减少 ~11 MB
-- 最终传输大小：**~1.8 MB**（gzip）
+- **GitHub Pages** — push 自动部署
 
 ## 本地运行
 
 ```bash
-# 克隆
 git clone https://github.com/escapecat/MahjongScorer.git
 cd MahjongScorer
-
-# 运行
 dotnet run
-
-# 或发布
-dotnet publish -c Release -o publish
-```
-
-## 项目结构
-
-```
-MahjongScorer/
-├── Pages/
-│   └── Home.razor              # 主界面（计算器 UI）
-├── Utilities/
-│   ├── FanEvaluator.cs         # 番种计算核心引擎
-│   ├── FanEvaluationResult.cs  # 计算结果模型
-│   ├── HandDecomposer.cs       # 手牌分解（面子+将）
-│   ├── HandPatternDetector.cs  # 特殊牌型检测
-│   ├── MahjongHandEvaluator.cs # 和牌判定
-│   ├── WaitAnalyzer.cs         # 听牌分析（边张/坎张/单钓）
-│   ├── TileConstants.cs        # 牌编码常量
-│   └── TileIconHelper.cs       # 牌图标映射
-├── Services/
-│   ├── FanService.cs           # 番种数据（名称/描述/示例）
-│   └── CalculatorStateService.cs # UI 状态持久化
-├── wwwroot/
-│   ├── tiles/                  # 麻将牌图片
-│   ├── css/app.css             # 样式
-│   └── sitemap.xml             # SEO 站点地图
-├── .github/workflows/
-│   └── deploy-pages.yml        # GitHub Pages 自动部署
-└── MahjongScorer.Tests/        # 单元测试
 ```
 
 ## 许可证
