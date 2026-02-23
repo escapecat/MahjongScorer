@@ -6,6 +6,7 @@
 
 ![Blazor WASM](https://img.shields.io/badge/Blazor-WebAssembly-512bd4?logo=blazor)
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512bd4?logo=dotnet)
+![Deploy](https://img.shields.io/github/actions/workflow/status/escapecat/MahjongScorer/deploy-pages.yml?label=deploy&logo=github)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 功能
@@ -41,7 +42,14 @@
 
 - **Blazor WebAssembly** (.NET 10) — 纯客户端 SPA
 - **PWA** — Service Worker 离线缓存
-- **GitHub Pages** — 静态托管，自动 CI/CD
+- **GitHub Pages** — 静态托管，push 自动部署
+- **Google Analytics** — 访问统计
+
+### 性能优化
+
+- `InvariantGlobalization` — 去掉 ICU 国际化数据，减少 ~10 MB
+- 移除 Bootstrap — 全部使用自定义 CSS，减少 ~11 MB
+- 最终传输大小：**~1.8 MB**（gzip）
 
 ## 本地运行
 
@@ -77,7 +85,10 @@ MahjongScorer/
 │   └── CalculatorStateService.cs # UI 状态持久化
 ├── wwwroot/
 │   ├── tiles/                  # 麻将牌图片
-│   └── css/app.css             # 样式
+│   ├── css/app.css             # 样式
+│   └── sitemap.xml             # SEO 站点地图
+├── .github/workflows/
+│   └── deploy-pages.yml        # GitHub Pages 自动部署
 └── MahjongScorer.Tests/        # 单元测试
 ```
 
