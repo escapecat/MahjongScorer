@@ -40,9 +40,10 @@
 
 ## 技术栈
 
-- **Blazor WebAssembly** (.NET 10)
+- **Blazor WebAssembly** (.NET 10) — 纯客户端 SPA
 - **PWA** — Service Worker 离线缓存
 - **GitHub Pages** — push 自动部署
+- **Google Analytics** — 访问统计
 
 ## 本地运行
 
@@ -73,6 +74,8 @@ MahjongScorer/
 ├── wwwroot/
 │   ├── tiles/                  # 麻将牌图片
 │   └── css/app.css             # 样式
+├── .github/workflows/
+│   └── deploy-pages.yml        # GitHub Pages 自动部署
 └── MahjongScorer.Tests/        # 单元测试
 ```
 
