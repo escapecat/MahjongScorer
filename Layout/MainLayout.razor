@@ -1,0 +1,18 @@
+﻿@inherits LayoutComponentBase
+
+<div class="app-container">
+    <main class="main-content">
+        @Body
+    </main>
+    
+    <nav class="bottom-nav">
+        <NavLink class="nav-tab" href="" Match="NavLinkMatch.All">
+            <span class="tab-icon">🧮</span>
+            <span class="tab-label">算番</span>
+        </NavLink>
+        <NavLink class="nav-tab" href="fantable">
+            <span class="tab-icon">📋</span>
+            <span class="tab-label">番表</span>
+        </NavLink>
+    </nav>
+</div>

@@ -1,0 +1,9 @@
+﻿# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/refs/heads/main/schemas/v1.0/azure.yaml.json
+name: mahjongscorer
+metadata:
+  template: mahjongscorer
+services:
+  mahjongscorer:
+    project: .
+    host: appservice
+    language: dotnet

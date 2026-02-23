@@ -1,0 +1,95 @@
+﻿@page "/fantable"
+@using MahjongScorer.Models
+@using MahjongScorer.Services
+@using MahjongScorer.Utilities
+@inject FanService FanService
+
+<PageTitle>番表 - 国标麻将</PageTitle>
+
+<div class="fan-table-container">
+    <div class="fan-filter-bar">
+        @foreach (var category in Enum.GetValues<FanCategory>())
+        {
+            <button class="chip-sm @GetFilterClass(category)" @onclick="() => SelectCategory(category)">
+                @FanService.GetCategoryDisplayName(category)
+            </button>
+        }
+    </div>
+
+    @{
+        var fans = GetFilteredFans(_selectedCategory);
+    }
+    @if (fans.Count > 0)
+    {
+        <div class="fan-list">
+            @foreach (var fan in fans)
+            {
+                <div class="fan-item @(_expandedFanIds.Contains(fan.Id) ? "expanded" : "")" @onclick="() => ToggleDetail(fan.Id)">
+                    <div class="fan-item-header">
+                        <span class="fan-item-icon">@fan.Icon</span>
+                        <span class="fan-item-name">@fan.Name</span>
+                        <span class="fan-item-pts">@fan.Points 番</span>
+                    </div>
+                    @if (_expandedFanIds.Contains(fan.Id))
+                    {
+                        <div class="fan-item-detail">
+                            <p class="fan-item-desc">@fan.Description</p>
+                            @if (!string.IsNullOrWhiteSpace(fan.ExampleTiles))
+                            {
+                                <div class="fan-item-example">
+                                    @foreach (var iconPath in TileIconHelper.GetIcons(fan.ExampleTiles))
+                                    {
+                                        <img class="tile-sm" src="@iconPath" alt="" />
+                                    }
+                                </div>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(fan.Example))
+                            {
+                                <p class="fan-item-example-text">@fan.Example</p>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private readonly HashSet<int> _expandedFanIds = new();
+    private IReadOnlyList<Fan> _allFans = Array.Empty<Fan>();
+    private FanCategory _selectedCategory = FanCategory.Points88;
+
+    protected override void OnInitialized()
+    {
+        _allFans = FanService.GetAllFans();
+    }
+
+    private List<Fan> GetFilteredFans(FanCategory category)
+    {
+        return _allFans.Where(f => f.Category == category).ToList();
+    }
+
+    private void SelectCategory(FanCategory category)
+    {
+        _selectedCategory = category;
+        _expandedFanIds.Clear();
+    }
+
+    private string GetFilterClass(FanCategory category)
+    {
+        return _selectedCategory == category ? "active" : string.Empty;
+    }
+
+    private void ToggleDetail(int fanId)
+    {
+        if (_expandedFanIds.Contains(fanId))
+        {
+            _expandedFanIds.Remove(fanId);
+        }
+        else
+        {
+            _expandedFanIds.Add(fanId);
+        }
+    }
+}

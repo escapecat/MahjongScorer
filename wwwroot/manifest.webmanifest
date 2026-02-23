@@ -1,0 +1,22 @@
+{
+  "name": "国标麻将算番器",
+  "short_name": "麻将算番",
+  "description": "国标麻将算番器 - 快速计算和查询番种",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2e7d32",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ]
+}

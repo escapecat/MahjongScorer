@@ -1,0 +1,566 @@
+﻿@page "/"
+@using MahjongScorer.Utilities
+@using MahjongScorer.Services
+@inject CalculatorStateService State
+
+<PageTitle>国标麻将算番器</PageTitle>
+
+<div class="calc-app">
+    <div class="calc-display">
+        <div class="score-bar">
+            <div class="score-bar-left">
+                <span class="score-bar-value">@(CurrentResult?.TotalFan ?? 0)</span>
+                <span class="score-bar-label">番</span>
+            </div>
+            <div class="score-bar-right">
+                @if (CurrentResult is null)
+                {
+                    <span class="score-bar-status">未成和</span>
+                }
+                else if (CurrentResult.TotalFan >= 8)
+                {
+                    <span class="score-bar-status valid">✓ 起和</span>
+                }
+                else
+                {
+                    <span class="score-bar-status">差 @(8 - CurrentResult.TotalFan) 番</span>
+                }
+                <span class="score-bar-count">@ActualTileCount / @ExpectedWinTileCount 张</span>
+            </div>
+            <button class="score-settings-btn @(_settingsOpen ? "open" : "")" @onclick="ToggleSettings">⚙</button>
+        </div>
+
+        @if (_settingsOpen)
+        {
+            <div class="settings-panel">
+                <div class="chip-row">
+                    <span class="chip-label">胜负</span>
+                    <button class="chip-sm @GetChipClass(_isSelfDraw)" @onclick="() => SetSelfDraw(true)">自摸</button>
+                    <button class="chip-sm @GetChipClass(!_isSelfDraw)" @onclick="() => SetSelfDraw(false)">点炮</button>
+                    <span class="chip-sep"></span>
+                    <span class="chip-label">花牌</span>
+                    <button class="chip-sm" @onclick="DecrementFlower">−</button>
+                    <span class="flower-value">@_flowerCount</span>
+                    <button class="chip-sm" @onclick="IncrementFlower">＋</button>
+                </div>
+                <div class="chip-row">
+                    <span class="chip-label">门风</span>
+                    @foreach (var w in Winds)
+                    {
+                        <button class="chip-sm @GetChipClass(_seatWind == w)" @onclick="() => SetSeatWind(w)">@GetWindLabel(w)</button>
+                    }
+                    <span class="chip-sep"></span>
+                    <span class="chip-label">圈风</span>
+                    @foreach (var w in Winds)
+                    {
+                        <button class="chip-sm @GetChipClass(_roundWind == w)" @onclick="() => SetRoundWind(w)">@GetWindLabel(w)</button>
+                    }
+                </div>
+                <div class="chip-row">
+                    <span class="chip-label">特殊</span>
+                    <button class="chip-sm @GetChipClass(_isWinningTileLast)" @onclick="ToggleWinningTileLast">绝张</button>
+                    <button class="chip-sm @GetChipClass(_isLastTile)" @onclick="ToggleLastTile">海底</button>
+                    <button class="chip-sm @GetChipClass(_isKongDraw)" @onclick="ToggleKongDraw">杠花</button>
+                    <button class="chip-sm @GetChipClass(_isRobbingKong)" @onclick="ToggleRobbingKong">抢杠</button>
+                </div>
+            </div>
+        }
+
+        <div class="hand-bar">
+            <div class="hand-bar-tiles">
+                @foreach (var entry in GetSortedTiles(_handCounts))
+                {
+                    @for (var i = 0; i < entry.Value; i++)
+                    {
+                        <button class="hand-tile" @onclick="() => RemoveTile(_handCounts, entry.Key)">
+                            <img class="tile-sm" src="@GetTileIcon(entry.Key)" alt="@entry.Key" />
+                        </button>
+                    }
+                }
+                @if (HasAnyMeld)
+                {
+                    <span class="hand-sep">│</span>
+                }
+                @foreach (var meld in AllMelds)
+                {
+                    <button class="hand-meld" @onclick="() => RemoveMeldByRef(meld)">
+                        @foreach (var tile in meld.Item2.Tiles)
+                        {
+                            <img class="tile-sm" src="@GetTileIcon(tile)" alt="@tile" />
+                        }
+                        <span class="meld-tag">@meld.Item3</span>
+                    </button>
+                }
+                @if (_handCounts.Count == 0 && !HasAnyMeld)
+                {
+                    <span class="hand-placeholder">点击下方牌键盘添加</span>
+                }
+            </div>
+            <button class="hand-clear" @onclick="ClearAllTiles">✕</button>
+        </div>
+
+        @if (CurrentResult is not null)
+        {
+            @if (CurrentResult.DecompositionTileGroups is { Count: > 0 })
+            {
+                <div class="wait-decomp result-decomp">
+                    @{ var resultWinGroupIdx = CurrentResult.WinningTileGroupIndex; }
+                    @{ var resultWinHighlighted = false; }
+                    @for (var gIdx = 0; gIdx < CurrentResult.DecompositionTileGroups.Count; gIdx++)
+                    {
+                        var group = CurrentResult.DecompositionTileGroups[gIdx];
+                        <span class="wait-decomp-group">
+                            @foreach (var tile in group)
+                            {
+                                @if (!resultWinHighlighted && _winningTile is not null && tile == _winningTile
+                                    && (resultWinGroupIdx < 0 || gIdx == resultWinGroupIdx))
+                                {
+                                    resultWinHighlighted = true;
+                                    <span class="tile-win-marker">
+                                        <img class="tile-xs" src="@GetTileIcon(tile)" alt="@tile" />
+                                    </span>
+                                }
+                                else
+                                {
+                                    <img class="tile-xs" src="@GetTileIcon(tile)" alt="@tile" />
+                                }
+                            }
+                        </span>
+                    }
+                </div>
+            }
+            <div class="result-bar">
+                @foreach (var fan in CurrentResult.FanNames)
+                {
+                    <button class="result-chip @(_expandedFanName == fan ? "expanded" : "")"
+                            @onclick="() => ToggleFanReason(fan)">@fan</button>
+                }
+            </div>
+            @if (_expandedFanName is not null && CurrentResult.Reasons.TryGetValue(_expandedFanName, out var reason))
+            {
+                <div class="fan-reason-bar">
+                    <span class="fan-reason-text">💡 @reason</span>
+                </div>
+            }
+        }
+
+        @if (WinSuggestions.Count > 0)
+        {
+            <div class="wait-section">
+                <div class="wait-bar">
+                    <span class="wait-bar-label">听</span>
+                    @foreach (var s in WinSuggestions)
+                    {
+                        <button class="wait-item @(_expandedWaitTile == s.TileCode ? "expanded" : "")" @onclick="() => ToggleWaitDetail(s.TileCode)">
+                            <img class="tile-sm" src="@s.TileIcon" alt="@s.TileCode" />
+                            <span class="wait-fan">@(s.TotalFan)番</span>
+                        </button>
+                    }
+                </div>
+                @{ var expandedSuggestion = WinSuggestions.FirstOrDefault(s => s.TileCode == _expandedWaitTile); }
+                @if (expandedSuggestion is not null)
+                {
+                    <div class="wait-detail">
+                        <div class="wait-detail-row">
+                            <div class="wait-detail-left">
+                                <img class="tile-sm" src="@expandedSuggestion.TileIcon" alt="" />
+                                <span class="wait-detail-fan">@(expandedSuggestion.TotalFan) 番</span>
+                            </div>
+                            @if (expandedSuggestion.DecompositionTileGroups is { Count: > 0 })
+                            {
+                                <div class="wait-detail-decomp">
+                                    @{ var sugWinGroupIdx = expandedSuggestion.WinningTileGroupIndex; }
+                                    @{ var winHighlighted = false; }
+                                    @for (var gIdx = 0; gIdx < expandedSuggestion.DecompositionTileGroups.Count; gIdx++)
+                                    {
+                                        var group = expandedSuggestion.DecompositionTileGroups[gIdx];
+                                        <span class="wait-decomp-group">
+                                            @foreach (var tile in group)
+                                            {
+                                                @if (!winHighlighted && tile == expandedSuggestion.TileCode
+                                                    && (sugWinGroupIdx < 0 || gIdx == sugWinGroupIdx))
+                                                {
+                                                    winHighlighted = true;
+                                                    <span class="tile-win-marker">
+                                                        <img class="tile-xs" src="@GetTileIcon(tile)" alt="@tile" />
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <img class="tile-xs" src="@GetTileIcon(tile)" alt="@tile" />
+                                                }
+                                            }
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <div class="wait-detail-chips">
+                            @foreach (var fan in expandedSuggestion.FanNames)
+                            {
+                                <span class="result-chip">@fan</span>
+                            }
+                        </div>
+                        <button class="wait-detail-add" @onclick="() => AddWinningTile(expandedSuggestion.TileCode)">添加此牌</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="calc-keyboard">
+        <div class="kb-targets">
+            <button class="kb-target @GetChipClass(_addTarget == AddTarget.Hand)" @onclick="() => _addTarget = AddTarget.Hand">手牌</button>
+            <button class="kb-target @GetChipClass(_addTarget == AddTarget.Chi)" @onclick="() => _addTarget = AddTarget.Chi">吃</button>
+            <button class="kb-target @GetChipClass(_addTarget == AddTarget.Peng)" @onclick="() => _addTarget = AddTarget.Peng">碰</button>
+            <button class="kb-target @GetChipClass(_addTarget == AddTarget.MingKong)" @onclick="() => _addTarget = AddTarget.MingKong">明杠</button>
+            <button class="kb-target @GetChipClass(_addTarget == AddTarget.AnKong)" @onclick="() => _addTarget = AddTarget.AnKong">暗杠</button>
+        </div>
+        <div class="kb-rows">
+            @foreach (var group in TileGroups)
+            {
+                <div class="kb-row">
+                    @foreach (var code in group.Tiles)
+                    {
+                        <button class="kb-tile @(IsTileDisabled(code) ? "disabled" : "")" @onclick="() => AddTileToTarget(code)" disabled="@IsTileDisabled(code)">
+                            <img class="tile-sm" src="@GetTileIcon(code)" alt="@(code)" />
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly Dictionary<string, int> _handCounts = new();
+    private readonly List<Meld> _chiMelds = new();
+    private readonly List<Meld> _pengMelds = new();
+    private readonly List<Meld> _mingKongMelds = new();
+    private readonly List<Meld> _anKongMelds = new();
+    private readonly string[] Winds = ["E", "S", "W", "N"];
+    private bool _isSelfDraw = true;
+    private string _seatWind = "E";
+    private string _roundWind = "E";
+    private int _flowerCount = 0;
+    private AddTarget _addTarget = AddTarget.Hand;
+    private string? _winningTile;
+    private bool _isLastTile;
+    private bool _isKongDraw;
+    private bool _isRobbingKong;
+    private bool _isWinningTileLast;
+    private bool _settingsOpen = true;
+    private string? _expandedWaitTile;
+    private string? _expandedFanName;
+
+    private List<WinSuggestion>? _cachedWinSuggestions;
+    private FanEvaluationResult? _cachedResult;
+    private bool _isDirty = true;
+
+    protected override void OnInitialized()
+    {
+        foreach (var kv in State.HandCounts) _handCounts[kv.Key] = kv.Value;
+        foreach (var m in State.ChiMelds) _chiMelds.Add(new Meld(m));
+        foreach (var m in State.PengMelds) _pengMelds.Add(new Meld(m));
+        foreach (var m in State.MingKongMelds) _mingKongMelds.Add(new Meld(m));
+        foreach (var m in State.AnKongMelds) _anKongMelds.Add(new Meld(m));
+        _isSelfDraw = State.IsSelfDraw;
+        _seatWind = State.SeatWind;
+        _roundWind = State.RoundWind;
+        _flowerCount = State.FlowerCount;
+        _winningTile = State.WinningTile;
+        _isLastTile = State.IsLastTile;
+        _isKongDraw = State.IsKongDraw;
+        _isRobbingKong = State.IsRobbingKong;
+        _isWinningTileLast = State.IsWinningTileLast;
+        _settingsOpen = State.SettingsOpen;
+    }
+
+    private void SaveState()
+    {
+        State.HandCounts.Clear();
+        foreach (var kv in _handCounts) State.HandCounts[kv.Key] = kv.Value;
+        State.ChiMelds.Clear(); State.ChiMelds.AddRange(_chiMelds.Select(m => m.Tiles.ToList()));
+        State.PengMelds.Clear(); State.PengMelds.AddRange(_pengMelds.Select(m => m.Tiles.ToList()));
+        State.MingKongMelds.Clear(); State.MingKongMelds.AddRange(_mingKongMelds.Select(m => m.Tiles.ToList()));
+        State.AnKongMelds.Clear(); State.AnKongMelds.AddRange(_anKongMelds.Select(m => m.Tiles.ToList()));
+        State.IsSelfDraw = _isSelfDraw;
+        State.SeatWind = _seatWind;
+        State.RoundWind = _roundWind;
+        State.FlowerCount = _flowerCount;
+        State.WinningTile = _winningTile;
+        State.IsLastTile = _isLastTile;
+        State.IsKongDraw = _isKongDraw;
+        State.IsRobbingKong = _isRobbingKong;
+        State.IsWinningTileLast = _isWinningTileLast;
+        State.SettingsOpen = _settingsOpen;
+    }
+
+    private List<WinSuggestion> WinSuggestions
+    {
+        get { if (_isDirty) Recalculate(); return _cachedWinSuggestions!; }
+    }
+
+    private FanEvaluationResult? CurrentResult
+    {
+        get { if (_isDirty) Recalculate(); return _cachedResult; }
+    }
+
+    private void Recalculate()
+    {
+        _cachedResult = EvaluateCurrentHand();
+        _cachedWinSuggestions = BuildWinSuggestions();
+        _isDirty = false;
+        if (_expandedWaitTile is not null && _cachedWinSuggestions!.All(s => s.TileCode != _expandedWaitTile))
+            _expandedWaitTile = null;
+    }
+
+    private void MarkDirty() { _isDirty = true; _expandedWaitTile = null; _expandedFanName = null; SaveState(); }
+
+    private void ToggleSettings() { _settingsOpen = !_settingsOpen; SaveState(); }
+
+    private void ToggleWaitDetail(string tileCode)
+    {
+        _expandedWaitTile = _expandedWaitTile == tileCode ? null : tileCode;
+    }
+
+    private void ToggleFanReason(string fanName)
+    {
+        _expandedFanName = _expandedFanName == fanName ? null : fanName;
+    }
+
+    private bool HasAnyMeld => _chiMelds.Count + _pengMelds.Count + _mingKongMelds.Count + _anKongMelds.Count > 0;
+
+    private IEnumerable<(List<Meld>, Meld, string)> AllMelds =>
+        _chiMelds.Select(m => (_chiMelds, m, "吃"))
+        .Concat(_pengMelds.Select(m => (_pengMelds, m, "碰")))
+        .Concat(_mingKongMelds.Select(m => (_mingKongMelds, m, "明杠")))
+        .Concat(_anKongMelds.Select(m => (_anKongMelds, m, "暗杠")));
+
+    private int TotalKongCount => _mingKongMelds.Count + _anKongMelds.Count;
+    private int ExpectedWinTileCount => 14 + TotalKongCount;
+    private int ExpectedListenTileCount => 13 + TotalKongCount;
+
+    private int ActualTileCount => GetTileCount(_handCounts)
+        + GetMeldTileTotal(_chiMelds, false)
+        + GetMeldTileTotal(_pengMelds, false)
+        + GetMeldTileTotal(_mingKongMelds, false)
+        + GetMeldTileTotal(_anKongMelds, false);
+
+    private int EffectiveTileCount => ActualTileCount - TotalKongCount;
+
+    private bool IsAtTileLimit => ActualTileCount >= ExpectedWinTileCount;
+
+    private int GetMeldTileTotal(List<Meld> melds, bool limitToThree)
+        => melds.Sum(m => limitToThree ? Math.Min(3, m.Tiles.Count) : m.Tiles.Count);
+
+    private static readonly IReadOnlyDictionary<string, int> TileIndexMap = TileConstants.TileIndexMap;
+    private static readonly string[] TileCodes = TileConstants.TileCodes;
+
+    private readonly List<TileGroup> TileGroups =
+    [
+        new("万", ["1m","2m","3m","4m","5m","6m","7m","8m","9m"]),
+        new("饼", ["1p","2p","3p","4p","5p","6p","7p","8p","9p"]),
+        new("条", ["1s","2s","3s","4s","5s","6s","7s","8s","9s"]),
+        new("字", ["E","S","W","N","C","F","P"])
+    ];
+
+    private bool IsTileDisabled(string code) => GetTotalTileCount(code) >= 4 || IsAtTileLimit;
+
+    private void SetSelfDraw(bool v) { _isSelfDraw = v; MarkDirty(); }
+    private void SetSeatWind(string w) { _seatWind = w; MarkDirty(); }
+    private void SetRoundWind(string w) { _roundWind = w; MarkDirty(); }
+    private void ToggleWinningTileLast() { _isWinningTileLast = !_isWinningTileLast; MarkDirty(); }
+    private void ToggleLastTile() { _isLastTile = !_isLastTile; MarkDirty(); }
+    private void ToggleKongDraw() { _isKongDraw = !_isKongDraw; MarkDirty(); }
+    private void ToggleRobbingKong() { _isRobbingKong = !_isRobbingKong; MarkDirty(); }
+
+    private void AddTileToTarget(String code)
+    {
+        if (IsAtTileLimit) return;
+
+        switch (_addTarget)
+        {
+            case AddTarget.Hand:
+                AddTile(_handCounts, code);
+                _winningTile = code;
+                break;
+            case AddTarget.Chi:
+                AddChiMeld(code);
+                break;
+            case AddTarget.Peng:
+                AddMeld(_pengMelds, code, 3);
+                break;
+            case AddTarget.MingKong:
+                AddMeld(_mingKongMelds, code, 4);
+                break;
+            case AddTarget.AnKong:
+                AddMeld(_anKongMelds, code, 4);
+                break;
+        }
+        MarkDirty();
+    }
+
+    private void AddMeld(List<Meld> target, string code, int count)
+    {
+        if (ActualTileCount + count > ExpectedWinTileCount) return;
+        var tiles = Enumerable.Repeat(code, count).ToList();
+        if (!CanAddTiles(tiles)) return;
+        target.Add(new Meld(tiles));
+    }
+
+    private void RemoveMeld(List<Meld> target, Meld meld) { target.Remove(meld); MarkDirty(); }
+    private void RemoveMeldByRef((List<Meld>, Meld, string) item) { item.Item1.Remove(item.Item2); MarkDirty(); }
+
+    private int GetMeldTileCount(List<Meld> melds, string code)
+        => melds.SelectMany(m => m.Tiles).Count(t => t == code);
+
+    private void AddTile(Dictionary<string, int> target, string code)
+    {
+        if (GetTotalTileCount(code) >= 4 || IsAtTileLimit) return;
+        target[code] = target.TryGetValue(code, out var v) ? v + 1 : 1;
+    }
+
+    private void RemoveTile(Dictionary<string, int> target, string code)
+    {
+        if (!target.TryGetValue(code, out var c) || c == 0) return;
+        if (c == 1) target.Remove(code); else target[code] = c - 1;
+        if (target == _handCounts && code == _winningTile) _winningTile = null;
+        MarkDirty();
+    }
+
+    private IEnumerable<KeyValuePair<string, int>> GetSortedTiles(Dictionary<string, int> src)
+        => src.OrderBy(e => TileIndexMap[e.Key]);
+
+    private int GetTileCount(Dictionary<string, int> src) => src.Values.Sum();
+    private int GetTileCount(Dictionary<string, int> src, string code) => src.TryGetValue(code, out var v) ? v : 0;
+    private string GetTileIcon(string code) => TileIconHelper.GetIcons(code).FirstOrDefault() ?? code;
+    private string GetChipClass(bool active) => active ? "active" : string.Empty;
+
+    private string GetWindLabel(string w) => w switch
+    {
+        "E" => "东", "S" => "南", "W" => "西", "N" => "北", _ => w
+    };
+
+    private void IncrementFlower() { _flowerCount = Math.Min(8, _flowerCount + 1); MarkDirty(); }
+    private void DecrementFlower() { _flowerCount = Math.Max(0, _flowerCount - 1); MarkDirty(); }
+
+    private void ClearAllTiles()
+    {
+        _handCounts.Clear();
+        _chiMelds.Clear(); _pengMelds.Clear(); _mingKongMelds.Clear(); _anKongMelds.Clear();
+        _flowerCount = 0; _winningTile = null;
+        _isLastTile = false; _isKongDraw = false; _isRobbingKong = false; _isWinningTileLast = false;
+        MarkDirty();
+    }
+
+    private FanEvaluationResult? EvaluateCurrentHand()
+    {
+        if (ActualTileCount != ExpectedWinTileCount || EffectiveTileCount != 14) return null;
+        var counts = BuildEvaluationCounts();
+        if (counts.Sum() % 3 != 2) return null;
+        var melds = BuildMeldsList();
+        if (!MahjongHandEvaluator.IsWinningHandWithMelds(counts, melds)) return null;
+        return FanEvaluator.Evaluate(BuildContext(counts));
+    }
+
+    private List<WinSuggestion> BuildWinSuggestions()
+    {
+        if (ActualTileCount != ExpectedListenTileCount || EffectiveTileCount != 13)
+            return [];
+        var counts = BuildEvaluationCounts();
+        if (counts.Sum() % 3 != 1) return [];
+        var melds = BuildMeldsList();
+        var saved = _winningTile;
+        var results = new List<WinSuggestion>();
+        for (var i = 0; i < counts.Length; i++)
+        {
+            if (counts[i] >= 4) continue;
+            counts[i]++;
+            if (MahjongHandEvaluator.IsWinningHandWithMelds(counts, melds))
+            {
+                _winningTile = TileCodes[i];
+                var ev = FanEvaluator.Evaluate(BuildContext(counts));
+                results.Add(new(TileCodes[i], GetTileIcon(TileCodes[i]), ev.TotalFan, ev.FanNames.ToList(), ev.DecompositionDescription, ev.DecompositionTileGroups, ev.WinningTileGroupIndex));
+            }
+            counts[i]--;
+        }
+        _winningTile = saved;
+        return results;
+    }
+
+    private List<IReadOnlyList<string>> BuildMeldsList() =>
+        _chiMelds.Select(m => (IReadOnlyList<string>)m.Tiles)
+        .Concat(_pengMelds.Select(m => (IReadOnlyList<string>)m.Tiles))
+        .Concat(_mingKongMelds.Select(m => (IReadOnlyList<string>)m.Tiles))
+        .Concat(_anKongMelds.Select(m => (IReadOnlyList<string>)m.Tiles))
+        .ToList();
+
+    private FanEvaluationContext BuildContext(int[] counts) => new(
+        counts.ToArray(), _isSelfDraw, _flowerCount, _seatWind, _roundWind,
+        _chiMelds.Count, _pengMelds.Count, _mingKongMelds.Count, _anKongMelds.Count,
+        WinningTile: _winningTile, IsLastTile: _isLastTile, IsKongDraw: _isKongDraw,
+        IsRobbingKong: _isRobbingKong, IsWinningTileLast: _isWinningTileLast,
+        Melds: BuildMeldsList());
+
+    private void AddWinningTile(string code)
+    {
+        _addTarget = AddTarget.Hand;
+        AddTile(_handCounts, code);
+        _winningTile = code;
+        _expandedWaitTile = null;
+        MarkDirty();
+    }
+
+    private int[] BuildEvaluationCounts()
+    {
+        var c = new int[34];
+        foreach (var e in _handCounts) if (TileIndexMap.TryGetValue(e.Key, out var i)) c[i] += e.Value;
+        AddMeldCounts(c, _chiMelds, false); AddMeldCounts(c, _pengMelds, false);
+        AddMeldCounts(c, _mingKongMelds, true); AddMeldCounts(c, _anKongMelds, true);
+        return c;
+    }
+
+    private void AddMeldCounts(int[] counts, List<Meld> melds, bool limit3)
+    {
+        foreach (var m in melds)
+            foreach (var g in m.Tiles.GroupBy(t => t))
+                if (TileIndexMap.TryGetValue(g.Key, out var i))
+                    counts[i] += limit3 ? Math.Min(3, g.Count()) : g.Count();
+    }
+
+    private void AddChiMeld(string code)
+    {
+        var tiles = BuildChiTiles(code);
+        if (tiles.Count == 0) return;
+        if (ActualTileCount + tiles.Count > ExpectedWinTileCount) return;
+        if (!CanAddTiles(tiles)) return;
+        _chiMelds.Add(new Meld(tiles));
+    }
+
+    private List<string> BuildChiTiles(string code)
+    {
+        if (code.Length != 2) return [];
+        var suit = code[1];
+        if (suit is not ('m' or 'p' or 's')) return [];
+        var n = code[0] - '0';
+        if (n < 1 || n > 7) return [];
+        return [code, $"{n + 1}{suit}", $"{n + 2}{suit}"];
+    }
+
+    private bool CanAddTiles(IEnumerable<string> tiles)
+    {
+        var grouped = tiles.GroupBy(t => t);
+        return grouped.All(g => GetTotalTileCount(g.Key) + g.Count() <= 4);
+    }
+
+    private int GetTotalTileCount(string code) =>
+        GetTileCount(_handCounts, code)
+        + GetMeldTileCount(_chiMelds, code) + GetMeldTileCount(_pengMelds, code)
+        + GetMeldTileCount(_mingKongMelds, code) + GetMeldTileCount(_anKongMelds, code);
+
+    private sealed record WinSuggestion(string TileCode, string TileIcon, int TotalFan, IReadOnlyList<string> FanNames, string? DecompositionDescription, List<List<string>>? DecompositionTileGroups, int WinningTileGroupIndex = -1);
+    private sealed record TileGroup(string Title, string[] Tiles);
+    private sealed record Meld(IReadOnlyList<string> Tiles);
+    private enum AddTarget { Hand, Chi, Peng, MingKong, AnKong }
+}

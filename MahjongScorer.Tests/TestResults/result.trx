@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="35fac386-2c67-4b02-870c-4dca4d077ec9" name="weideng@CPC-weide-21V04 2026-02-23 00:36:32" runUser="FAREAST\weideng" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-02-23T00:36:32.5514562+08:00" queuing="2026-02-23T00:36:32.5514565+08:00" start="2026-02-23T00:36:31.6185106+08:00" finish="2026-02-23T00:36:32.5582601+08:00" />
+  <TestSettings name="default" id="5fe98bbd-356b-4828-b8e5-7b05db7e9a73">
+    <Deployment runDeploymentRoot="weideng_CPC-weide-21V04_2026-02-23_00_36_32" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="a15569df-e321-4441-8b47-98335d9726b6" testId="7ac1cd6b-55ae-9a03-328f-673021ed8ac2" testName="MahjongScorer.Tests.DebugFanTest.Debug_YiSeSiTongShun" computerName="CPC-weide-21V04" duration="00:00:00.0442477" startTime="2026-02-23T00:36:32.3596952+08:00" endTime="2026-02-23T00:36:32.4118340+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a15569df-e321-4441-8b47-98335d9726b6">
+      <Output>
+        <StdOut>一色三节高 24番&#xD;
+三暗刻 16番&#xD;
+碰碰和 6番&#xD;
+四归一 2番&#xD;
+四归一 2番&#xD;
+四归一 2番&#xD;
+门前清 2番&#xD;
+无字 1番&#xD;
+缺一门 1番&#xD;
+幺九刻 1番&#xD;
+Total: 57</StdOut>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="MahjongScorer.Tests.DebugFanTest.Debug_YiSeSiTongShun" storage="c:\mahjongscorer\mahjongscorer.tests\bin\debug\net10.0\mahjongscorer.tests.dll" id="7ac1cd6b-55ae-9a03-328f-673021ed8ac2">
+      <Execution id="a15569df-e321-4441-8b47-98335d9726b6" />
+      <TestMethod codeBase="C:\MahjongScorer\MahjongScorer.Tests\bin\Debug\net10.0\MahjongScorer.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="MahjongScorer.Tests.DebugFanTest" name="Debug_YiSeSiTongShun" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="7ac1cd6b-55ae-9a03-328f-673021ed8ac2" executionId="a15569df-e321-4441-8b47-98335d9726b6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.0)&#xD;
+[xUnit.net 00:00:00.09]   Discovering: MahjongScorer.Tests&#xD;
+[xUnit.net 00:00:00.14]   Discovered:  MahjongScorer.Tests&#xD;
+[xUnit.net 00:00:00.17]   Starting:    MahjongScorer.Tests&#xD;
+[xUnit.net 00:00:00.26]   Finished:    MahjongScorer.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>
