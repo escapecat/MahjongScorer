@@ -8,6 +8,9 @@
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <CodePage>65001</CodePage>
     <UserSecretsId>63348da2-658d-4760-b7d8-efd30e71bf62</UserSecretsId>
+    <!-- Optimization: reduce download size -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +24,7 @@
 
   <ItemGroup>
     <None Include=".azure\summary.copilot.md" />
+    <None Include=".github\workflows\deploy-pages.yml" />
   </ItemGroup>
 
   <ItemGroup>
