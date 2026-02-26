@@ -14,6 +14,22 @@ public static class MahjongHandEvaluator
             return true;
         }
 
+        // Special hand forms (no standard decomposition)
+        if (HandPatternDetector.IsThirteenOrphans(counts))
+        {
+            return true;
+        }
+
+        if (HandPatternDetector.IsSevenStarNotConnected(counts))
+        {
+            return true;
+        }
+
+        if (HandPatternDetector.IsAllNotConnected(counts))
+        {
+            return true;
+        }
+
         for (var i = 0; i < counts.Length; i++)
         {
             if (counts[i] < 2)

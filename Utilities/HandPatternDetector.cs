@@ -402,16 +402,20 @@ internal static class HandPatternDetector
 
     private static bool IsUnrelatedHand(int[] counts, bool requireAllGroups)
     {
-        if (counts[27..].Any(count => count != 1))
+        // Honor tiles: each at most 1
+        var honorCount = 0;
+        for (var i = 27; i < 34; i++)
         {
-            return false;
+            if (counts[i] > 1) return false;
+            if (counts[i] == 1) honorCount++;
         }
 
+        // 七星不靠 requires all 7 honors; 全不靠 requires at least 5
+        if (requireAllGroups && honorCount != 7) return false;
+        if (!requireAllGroups && honorCount < 5) return false;
+
         var totalNumbers = counts[..27].Sum();
-        if (totalNumbers != 7)
-        {
-            return false;
-        }
+        if (totalNumbers + honorCount != 14) return false;
 
         var groupsPresent = new HashSet<int>();
         for (var suit = 0; suit < 3; suit++)

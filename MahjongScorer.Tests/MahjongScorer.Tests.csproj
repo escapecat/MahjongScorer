@@ -18,8 +18,13 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Include source files directly instead of ProjectReference to avoid
+       triggering the Blazor WASM toolchain (IL trimmer/linker) on every build.
+       The WASM toolchain adds 3+ minutes to each build. -->
   <ItemGroup>
-    <ProjectReference Include="..\MahjongScorer.csproj" />
+    <Compile Include="..\Utilities\*.cs" LinkBase="Utilities" />
+    <Compile Include="..\Models\*.cs" LinkBase="Models" />
+    <Compile Include="..\Services\*.cs" LinkBase="Services" />
   </ItemGroup>
 
 </Project>

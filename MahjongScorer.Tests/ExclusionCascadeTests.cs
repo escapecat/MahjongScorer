@@ -76,7 +76,7 @@ public partial class FanTests
         Assert.DoesNotContain("自摸 1番", result.FanNames);
     }
 
-    [Fact(Skip = "全不靠 detector requires all 7 honors — detector needs separate fix")]
+    [Fact]
     public void QuanBuKao_SelfDraw_No_BuQiuRen()
     {
         var counts = BuildCounts("147m 258p 369s E S W N C");

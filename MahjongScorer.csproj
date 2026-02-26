@@ -13,6 +13,19 @@
     <BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
   </PropertyGroup>
 
+  <!-- Speed up Debug builds: skip expensive WASM post-processing -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <ServiceWorkerAssetsManifest></ServiceWorkerAssetsManifest>
+    <BlazorCacheBootResources>false</BlazorCacheBootResources>
+    <WasmFingerprintDotnetJs>false</WasmFingerprintDotnetJs>
+    <!-- Disable IL trimming in Debug — biggest time saver -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <BlazorWebAssemblyEnableLinking>false</BlazorWebAssemblyEnableLinking>
+    <!-- Skip compression of static assets during build -->
+    <CompressionEnabled>false</CompressionEnabled>
+    <BlazorEnableCompression>false</BlazorEnableCompression>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" PrivateAssets="all" />
